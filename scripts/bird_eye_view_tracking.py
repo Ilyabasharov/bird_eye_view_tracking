@@ -48,7 +48,7 @@ class BirdEyeView:
         self.colors = colorGenerator()
 
     def run(self):
-    	rospy.spin()
+        rospy.spin()
 
    	def process(self, pc_msg, objects_msg):
 

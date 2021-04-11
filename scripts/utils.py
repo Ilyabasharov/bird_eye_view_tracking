@@ -51,7 +51,7 @@ def rle_msg_to_mask(rle_msg):
 
 def clastering(pc):
 
-	n_sampling = 500 if len(pc) > 500 else len(pc)
+    n_sampling = 500 if len(pc) > 500 else len(pc)
 
     indexes = np.linspace(0, len(pc), n_sampling, dtype=np.int32, endpoint=False)
     points_to_fit = pc[indexes]
