@@ -17,14 +17,14 @@ from utils import (
 
 class BirdEyeView:
 
-	def __init__(self):
+    def __init__(self):
 
-		rospy.init_node('bird_eye_view_tracking')
+        rospy.init_node('bird_eye_view_tracking')
 
         self.synchronizer = rospy.TimeSynchronizer(
             [
-            	rospy.Subscriber('point_cloud', PointCloud2),
-            	rospy.Subscriber('objects', ObjectArray),
+                rospy.Subscriber('point_cloud', PointCloud2),
+                rospy.Subscriber('objects', ObjectArray),
             ],
             queue_size=10,
         )
@@ -32,9 +32,9 @@ class BirdEyeView:
         self.synchronizer.registerCallback(self.process)
 
         self.centers_pub = rospy.Publisher(
-        	'visualisation',
-        	MarkerArray,
-        	queue_size=10,
+            'visualisation',
+            MarkerArray,
+            queue_size=10,
         )
 
         path2odometry = rospy.get_param('~odometry', '')
