@@ -50,7 +50,7 @@ class BirdEyeView:
     def run(self):
         rospy.spin()
 
-   	def process(self, pc_msg, objects_msg):
+    def process(self, pc_msg, objects_msg):
 
         pc = pointcloud2_to_array(pc_msg)
 
