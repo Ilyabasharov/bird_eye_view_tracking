@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="path2odometry" default="/root/dataset" />
+  <arg name="path2odometry" default="/home/docker_solo/dataset" />
   <arg name="sequence" default="01" />
   
   <arg name="points" default="/depth_registered/points" />

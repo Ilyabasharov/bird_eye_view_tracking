@@ -1,8 +1,9 @@
 #!/usr/bin/python
 
 import rospy
-import pykitti
+import message_filters
 
+import pykitti
 import numpy as np
 
 from sensor_msgs.msg import PointCloud2
@@ -21,10 +22,10 @@ class BirdEyeView:
 
         rospy.init_node('bird_eye_view_tracking')
 
-        self.synchronizer = rospy.TimeSynchronizer(
+        self.synchronizer = message_filters.TimeSynchronizer(
             [
-                rospy.Subscriber('point_cloud', PointCloud2),
-                rospy.Subscriber('objects', ObjectArray),
+                message_filters.Subscriber('point_cloud', PointCloud2),
+                message_filters.Subscriber('objects', ObjectArray),
             ],
             queue_size=10,
         )
@@ -37,8 +38,8 @@ class BirdEyeView:
             queue_size=10,
         )
 
-        path2odometry = rospy.get_param('~odometry', '')
-        sequence = rospy.get_param('~sequence', '')
+        path2odometry = rospy.get_param('~odometry', '01')
+        sequence = rospy.get_param('~sequence', '/home/docker_solo/dataset')
 
         self.datainfo = pykitti.odometry(path2odometry, sequence)
         self.frame_id = 0
