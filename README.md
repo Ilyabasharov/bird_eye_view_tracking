@@ -18,7 +18,7 @@ source devel/setup.bash
 
 ## Execution
 
-Input messages like ```ObjectArray``` and ```PointCloud2``` are required for execution. Also you must specify a path to odometry dataset in KITTI-like format of [http://www.cvlibs.net/datasets/kitti/eval_odometry.php](data) and ID of sequence in 2 numbers format with the first zero if necessary.
+Input messages like ```ObjectArray``` and ```PointCloud2``` are required for execution. Also you must specify a path to odometry dataset in [KITTI-like format of data](http://www.cvlibs.net/datasets/kitti/eval_odometry.php) and ID of sequence in 2 numbers format with the first zero if necessary.
 
 ```bash
 roslaunch bird_eye_view_tracking main.launch \
