@@ -2,15 +2,18 @@
 
 import rospy
 import message_filters
+from ros_numpy.point_cloud2 import pointcloud2_to_array
 
 import pykitti
 import numpy as np
+from numpy.lib.recfunctions import structured_to_unstructured as s2u
 
 from sensor_msgs.msg import PointCloud2
 from camera_objects_msgs.msg import ObjectArray
 from visualization_msgs.msg import MarkerArray
 
 from utils import (
+    rle_msg_to_mask,
     colorGenerator,
     clastering,
     create_marker_array,
@@ -38,8 +41,12 @@ class BirdEyeView:
             queue_size=10,
         )
 
-        path2odometry = rospy.get_param('~odometry', '01')
-        sequence = rospy.get_param('~sequence', '/home/docker_solo/dataset')
+        path2odometry = rospy.get_param('~odometry', '/home/docker_solo/dataset')
+        sequence = rospy.get_param('~sequence', '01')
+        if isinstance(sequence, int):
+            sequence = str(sequence).zfill(2)
+
+        print(path2odometry, sequence)
 
         self.datainfo = pykitti.odometry(path2odometry, sequence)
         self.frame_id = 0
@@ -57,22 +64,27 @@ class BirdEyeView:
         num_mask = np.isfinite(pc['x']) \
                  & np.isfinite(pc['y']) \
                  & np.isfinite(pc['z'])
+        
+        transform = self.datainfo.poses[self.frame_id]
 
         self.track_prev = {}
         for track_id in self.track_current:
-            self.track_prev[track_id] = self.track_current.pop(track_id)
-
+            self.track_prev[track_id] = self.track_current[track_id]
+        self.track_current = {}
+        
         for object_msg in objects_msg.objects:
+            
+            if object_msg.track_id < 1:
+                continue
 
-            obj_mask = rle_msg_to_mask(object_msg.rle_msg)
+            obj_mask = rle_msg_to_mask(object_msg.rle).astype(np.bool)
             obj_pc = s2u(pc[num_mask & obj_mask][['x', 'y', 'z']])
 
             if len(obj_pc) < 50:
                 continue
 
             local_center = np.append(clastering(obj_pc), 1)
-
-            center = np.dot(local_center, self.datainfo.poses[self.frame_id])[:3]
+            center = np.dot(transform, local_center)[:3]
 
             self.track_current[object_msg.track_id] = {
                 'frame_id': self.frame_id,
@@ -82,8 +94,10 @@ class BirdEyeView:
         self.frame_id += 1
 
         all_markers = []
-        for desc, dev_by in zip((self.track_current, self.track_prev,), (1., 2.,)):
-            all_markers.extend(create_marker_array(desc, self.colors, pc_msg.header, dev_by))
+        for desc, dev_by, start_id in zip(
+                (self.track_current, self.track_prev,),
+                (1., 1.5,), (0, len(self.track_current))):
+            all_markers.extend(create_marker_array(desc, self.colors, pc_msg.header, dev_by, start_id))
 
         self.centers_pub.publish(MarkerArray(all_markers))
 

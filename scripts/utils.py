@@ -29,7 +29,7 @@ class colorGenerator:
 
     def __init__(self, basis=30):
         brightness = 0.7
-        hsv = [(i / basis, 1, brightness) for i in range(basis)]
+        hsv = [(float(i) / basis, 1. / (i + 1), brightness) for i in range(basis)]
         colors = list(map(lambda c: colorsys.hsv_to_rgb(*c), hsv))
         
         self.colors = np.random.permutation(colors)
@@ -67,7 +67,7 @@ def clastering(pc):
     return points_of_biggest_subcluster.mean(axis=0)
 
 
-def create_marker_array(desc, colormap, header, dev_by=1):
+def create_marker_array(desc, colormap, header, dev_by=1, start_id=0):
 
     markers = []
 
@@ -76,6 +76,7 @@ def create_marker_array(desc, colormap, header, dev_by=1):
         color = colormap.get_color(track_id)
 
         marker = Marker(
+            id       = start_id,
             header   = header,
             type     = Marker.SPHERE,
             action   = Marker.ADD,
@@ -105,7 +106,8 @@ def create_marker_array(desc, colormap, header, dev_by=1):
                 ),
             ),
         )
-
+        
+        start_id += 1
         markers.append(marker)
 
     return markers
