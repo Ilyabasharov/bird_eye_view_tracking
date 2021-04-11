@@ -71,7 +71,7 @@ class BirdEyeView:
 
             local_center = np.append(clastering(obj_pc), 1)
 
-            center = (local_center @ self.datainfo.poses[self.frame_id])[:3]
+            center = np.dot(local_center, self.datainfo.poses[self.frame_id])[:3]
 
             self.track_current[object_msg.track_id] = {
                 'frame_id': self.frame_id,
