@@ -12,7 +12,7 @@ from visualization_msgs.msg import MarkerArray
 from utils import (
     colorGenerator,
     clastering,
-    create_marker_array
+    create_marker_array,
 )
 
 class BirdEyeView:
@@ -44,7 +44,6 @@ class BirdEyeView:
         self.frame_id = 0
         self.track_current, self.track_prev = {}, {}
 
-        self.keep_alive = 30
         self.colors = colorGenerator()
 
     def run(self):
@@ -59,10 +58,8 @@ class BirdEyeView:
                  & np.isfinite(point_cloud['z'])
 
         self.track_prev = {}
-
         for track_id in self.track_current:
-            if self.track_current[track_id]['frame_id'] > self.frame_id - self.keep_alive:
-                del self.track_current[track_id]
+            self.track_prev[object_msg.track_id] = self.track_current.pop(track_id)
 
         for object_msg in objects_msg.objects:
 
@@ -76,18 +73,10 @@ class BirdEyeView:
 
             center = (local_center @ self.datainfo.poses[self.frame_id])[:3]
 
-            if object_msg.track_id in self.track_current:
-
-                self.track_prev[object_msg.track_id] = self.track_current[object_msg.track_id]
-                self.track_current[object_msg.track_id]['center'] = center
-                self.track_current[object_msg.track_id]['frame_id'] = self.frame_id
-
-            else:
-
-                self.track_current[object_msg.track_id] = {
-                    'frame_id': self.frame_id,
-                    'center':   center,
-                }
+            self.track_current[object_msg.track_id] = {
+                'frame_id': self.frame_id,
+                'center':   center,
+            }
 
         self.frame_id += 1
 
