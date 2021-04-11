@@ -22,8 +22,8 @@ Input messages like ```ObjectArray``` and ```PointCloud2``` are required for exe
 
 ```bash
 roslaunch bird_eye_view_tracking main.launch \
-	path2odometry:=/root/dataset \
-	sequence:=01 \
+    path2odometry:=/root/dataset \
+    sequence:=01 \
     points:=/depth_registered/points \
     objects:=/stereo/objects \
     markers:=/bird_eye_view/visualisation
