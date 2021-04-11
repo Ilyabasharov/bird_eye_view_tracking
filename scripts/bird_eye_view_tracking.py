@@ -53,13 +53,13 @@ class BirdEyeView:
 
         pc = pointcloud2_to_array(pc_msg)
 
-        num_mask = np.isfinite(point_cloud['x']) \
-                 & np.isfinite(point_cloud['y']) \
-                 & np.isfinite(point_cloud['z'])
+        num_mask = np.isfinite(pc['x']) \
+                 & np.isfinite(pc['y']) \
+                 & np.isfinite(pc['z'])
 
         self.track_prev = {}
         for track_id in self.track_current:
-            self.track_prev[object_msg.track_id] = self.track_current.pop(track_id)
+            self.track_prev[track_id] = self.track_current.pop(track_id)
 
         for object_msg in objects_msg.objects:
 
