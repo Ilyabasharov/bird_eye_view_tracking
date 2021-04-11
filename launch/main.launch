@@ -1,0 +1,19 @@
+<launch>
+
+  <arg name="path2odometry" default="/root/dataset" />
+  <arg name="sequence" default="01" />
+  
+  <arg name="points" default="/depth_registered/points" />
+  <arg name="objects" default="/stereo/objects" />
+  <arg name="markers" default="/bird_eye_view/visualisation" />
+
+  <remap from="point_cloud" to="$(arg points)" />
+  <remap from="objects" to="$(arg objects)" />
+  <remap from="visualisation" to="$(arg markers)" />
+
+  <node pkg="bird_eye_view_tracking" type="bird_eye_view_tracking.py" name="bird_eye_view_tracking" output="screen" >
+    <param name="odometry" value="$(arg path2odometry)" />
+    <param name="sequence" value="$(arg sequence)" />
+  </node>
+
+</launch>

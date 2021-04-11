@@ -3,6 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Mac extensions
+**/.DS_Store
+
+# jupyter notebook
+.ipynb_checkpoints
+
 # C extensions
 *.so
 
