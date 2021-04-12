@@ -24,20 +24,14 @@ from geometry_msgs.msg import (
     Quaternion,
 )
 
+class ColorGenerator:
 
-class colorGenerator:
-
-    def __init__(self, basis=30):
-        brightness = 0.7
-        hsv = [(float(i) / basis, 1. / (i + 1), brightness) for i in range(basis)]
-        colors = list(map(lambda c: colorsys.hsv_to_rgb(*c), hsv))
-        
-        self.colors = np.random.permutation(colors)
-        self.basis = basis
+    def __init__(self, n=30):
+        self.n = n
+        self.colors = np.random.rand(self.n, 3)
 
     def get_color(self, track_id):
-        return self.colors[track_id % self.basis]
-
+        return self.colors[track_id % self.n]
 
 def rle_msg_to_mask(rle_msg):
     mask = mask_utils.decode(

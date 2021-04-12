@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import rospy
+import tf
 import message_filters
 from ros_numpy.point_cloud2 import pointcloud2_to_array
 
@@ -14,10 +15,32 @@ from visualization_msgs.msg import MarkerArray
 
 from utils import (
     rle_msg_to_mask,
-    colorGenerator,
+    ColorGenerator,
     clastering,
     create_marker_array,
 )
+
+class TransformBroadcaster:
+
+    def __init__(self, path2odometry, sequence):
+        
+        if isinstance(sequence, int):
+            sequence = str(sequence).zfill(2)
+
+        self.datainfo = pykitti.odometry(path2odometry, sequence)
+        self.br = tf.TransformBroadcaster()
+
+    def publish(self, n_frame, header):
+        _, _, rpy_angles, translation_vector, _ = \
+        tf.transformations.decompose_matrix(self.datainfo.poses[n_frame])
+        
+        self.br.sendTransform(
+            translation_vector,
+            tf.transformations.quaternion_from_euler(*rpy_angles),
+            header.stamp,
+            'odom',
+            header.frame_id,
+        )
 
 class BirdEyeView:
 
@@ -43,16 +66,13 @@ class BirdEyeView:
 
         path2odometry = rospy.get_param('~odometry', '/home/docker_solo/dataset')
         sequence = rospy.get_param('~sequence', '01')
-        if isinstance(sequence, int):
-            sequence = str(sequence).zfill(2)
+        
+        self.br = TransformBroadcaster(path2odometry, sequence)
 
-        print(path2odometry, sequence)
-
-        self.datainfo = pykitti.odometry(path2odometry, sequence)
-        self.frame_id = 0
+        self.n_frame = 0
         self.track_current, self.track_prev = {}, {}
 
-        self.colors = colorGenerator()
+        self.colors = ColorGenerator()
 
     def run(self):
         rospy.spin()
@@ -64,8 +84,6 @@ class BirdEyeView:
         num_mask = np.isfinite(pc['x']) \
                  & np.isfinite(pc['y']) \
                  & np.isfinite(pc['z'])
-        
-        transform = self.datainfo.poses[self.frame_id]
 
         self.track_prev = {}
         for track_id in self.track_current:
@@ -83,31 +101,30 @@ class BirdEyeView:
             if len(obj_pc) < 50:
                 continue
 
-            local_center = np.append(clastering(obj_pc), 1)
-            center = np.dot(transform, local_center)[:3]
+            local_center = clastering(obj_pc)
 
             self.track_current[object_msg.track_id] = {
-                'frame_id': self.frame_id,
-                'center':   center,
+                'n_frame': self.n_frame,
+                'center':  local_center,
             }
 
-        self.frame_id += 1
-
-        all_markers = []
-        for desc, dev_by, start_id in zip(
-                (self.track_current, self.track_prev,),
-                (1., 1.5,), (0, len(self.track_current))):
-            all_markers.extend(create_marker_array(desc, self.colors, pc_msg.header, dev_by, start_id))
+        all_markers = create_marker_array(self.track_current, self.colors, pc_msg.header, 1., 0)
+        all_markers.extend(
+            create_marker_array(self.track_prev, self.colors, pc_msg.header, 1.2, len(self.track_current))
+        )
 
         self.centers_pub.publish(MarkerArray(all_markers))
+        self.br.publish(self.n_frame, pc_msg.header)
+
+        self.n_frame += 1
 
 
 def main():
     
     np.random.seed(100)
 
-    denoiser = BirdEyeView()
-    denoiser.run()
+    viz = BirdEyeView()
+    viz.run()
 
 if __name__ == '__main__':
     main()
