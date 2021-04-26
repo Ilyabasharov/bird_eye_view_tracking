@@ -20,6 +20,14 @@ from utils import (
     create_marker_array,
 )
 
+def future_odom(future_m, current_m, x):
+    
+    inv_f = np.linalg.inv(future_m)
+    transform = np.dot(inv_f, current_m)
+
+    return np.dot(transform, x)
+
+
 class TransformBroadcaster:
 
     def __init__(self, path2odometry, sequence):
@@ -66,11 +74,13 @@ class BirdEyeView:
 
         path2odometry = rospy.get_param('~odometry', '/home/docker_solo/dataset')
         sequence = rospy.get_param('~sequence', '01')
-        
-        self.br = TransformBroadcaster(path2odometry, sequence)
+        if isinstance(sequence, int):
+            sequence = str(sequence).zfill(2)
 
+        #self.br = TransformBroadcaster(path2odometry, sequence)
+        self.datainfo = pykitti.odometry(path2odometry, sequence)
         self.n_frame = 0
-        self.track_current, self.track_prev = {}, {}
+        self.track_current, self.track_future = {}, {}
 
         self.colors = ColorGenerator()
 
@@ -84,11 +94,13 @@ class BirdEyeView:
         num_mask = np.isfinite(pc['x']) \
                  & np.isfinite(pc['y']) \
                  & np.isfinite(pc['z'])
-
-        self.track_prev = {}
-        for track_id in self.track_current:
-            self.track_prev[track_id] = self.track_current[track_id]
+        
+        to_viz = {}
         self.track_current = {}
+
+        for track_id in self.track_future:
+            to_viz[track_id] = self.track_future[track_id]
+        self.track_future = {}
         
         for object_msg in objects_msg.objects:
             
@@ -101,20 +113,31 @@ class BirdEyeView:
             if len(obj_pc) < 50:
                 continue
 
-            local_center = clastering(obj_pc)
+            local_center = np.append(clastering(obj_pc), 1)
 
             self.track_current[object_msg.track_id] = {
                 'n_frame': self.n_frame,
                 'center':  local_center,
             }
+        
+        for track_id in self.track_current:
+            self.track_future[track_id] = {
+                'n_frame': self.n_frame,
+                'center':  future_odom(
+                    self.datainfo.poses[self.n_frame + 1], 
+                    self.datainfo.poses[self.n_frame + 0],
+                    self.track_current[track_id]['center'],
+                ),
+            }
+
 
         all_markers = create_marker_array(self.track_current, self.colors, pc_msg.header, 1., 0)
         all_markers.extend(
-            create_marker_array(self.track_prev, self.colors, pc_msg.header, 1.2, len(self.track_current))
+            create_marker_array(to_viz, self.colors, pc_msg.header, 1.2, len(self.track_current))
         )
 
         self.centers_pub.publish(MarkerArray(all_markers))
-        self.br.publish(self.n_frame, pc_msg.header)
+        #self.br.publish(self.n_frame, pc_msg.header)
 
         self.n_frame += 1
 
