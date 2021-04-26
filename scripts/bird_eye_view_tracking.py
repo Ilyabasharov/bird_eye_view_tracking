@@ -95,11 +95,14 @@ class BirdEyeView:
                  & np.isfinite(pc['y']) \
                  & np.isfinite(pc['z'])
         
-        to_viz = {}
+        self.track_prev_proj, self.track_prev = {}, {}
+        for track_id in self.track_current:
+            self.track_prev[track_id] = self.track_current[track_id]
+
         self.track_current = {}
 
         for track_id in self.track_future:
-            to_viz[track_id] = self.track_future[track_id]
+            self.track_prev_proj[track_id] = self.track_future[track_id]
         self.track_future = {}
         
         for object_msg in objects_msg.objects:
@@ -131,9 +134,13 @@ class BirdEyeView:
             }
 
 
-        all_markers = create_marker_array(self.track_current, self.colors, pc_msg.header, 1., 0)
+        all_markers = create_marker_array(self.track_current, self.colors, pc_msg.header, 4., 0)
         all_markers.extend(
-            create_marker_array(to_viz, self.colors, pc_msg.header, 1.2, len(self.track_current))
+            create_marker_array(self.track_prev_proj, self.colors, pc_msg.header, 5., len(self.track_current))
+        )
+
+        all_markers.extend(
+            create_marker_array(self.track_prev, self.colors, pc_msg.header, 6., len(self.track_current) + len(self.track_prev_proj))
         )
 
         self.centers_pub.publish(MarkerArray(all_markers))
